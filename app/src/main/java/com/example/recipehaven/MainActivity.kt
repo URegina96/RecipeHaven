@@ -1,20 +1,34 @@
 package com.example.recipehaven
 
+import RecipeAppNavHost
+import RecipeAppTheme
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.rememberNavController
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkRequest
+import com.example.recipehaven.data.worker.RecipeSyncWorker
+import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity() {
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+        setContent {
+            RecipeAppTheme {
+                val navController = rememberNavController()
+                RecipeAppNavHost(navController = navController, viewModel = hiltViewModel())
+            }
         }
+
+        val syncRequest: WorkRequest = PeriodicWorkRequestBuilder<RecipeSyncWorker>(1, TimeUnit.HOURS)
+            .build()
+
+        WorkManager.getInstance(this).enqueue(syncRequest)
     }
 }
